@@ -1,0 +1,63 @@
+package board_ex.service;
+
+import java.util.List;
+
+import board_ex.model.BoardDao;
+import board_ex.model.BoardException;
+import board_ex.model.BoardVO;
+
+public class ListArticleService {
+	private int totalRecCount;   //전체 레코드 수
+	private int pageTotalCount;  //전체 페이지수
+	private int CountPerPage=5;  //한페이지당 레코드 수
+	private static ListArticleService instance;
+	public static ListArticleService getInstance()  throws BoardException{
+		if( instance == null )
+		{
+			instance = new ListArticleService();
+		}
+		return instance;
+	}
+	
+	private ListArticleService() {
+		
+	}
+	public List <BoardVO> getArticleList(String pNum) throws BoardException
+	{
+		int pageNum=1;
+		if(pNum !=null ) pageNum = Integer.parseInt(pNum);
+		
+		/*
+		 * pageNum   1   2   3   4
+		 * firstRow  1   6   11  16
+		 * endRow    5   10  15  20
+		 */
+		
+		int firstRow = (pageNum * CountPerPage) - (CountPerPage - 1);
+		int endRow = (pageNum * CountPerPage);
+		
+		 List <BoardVO> mList = BoardDao.getInstance().selectList(firstRow,endRow);			
+		return mList;
+	}
+	
+	public int getTotalCount() throws BoardException{
+		// 데이터베이스에서 실제 레코드 수를 얻어오기
+		totalRecCount = BoardDao.getInstance().getTotalCount();
+		
+		if(totalRecCount%5 == 0) {
+			pageTotalCount = totalRecCount/5;
+		}else {
+			pageTotalCount = (totalRecCount/5)+1;
+		}
+		return pageTotalCount;
+	}
+		
+}
+
+
+//***************************
+현재 페이지 보여줄 메시지 목록 얻어올 때 sql문장
+//***************************
+select * from board_ex where seq in
+(select seq from (select rownum as rnum,seq from (select seq from board_ex order by seq desc))
+where rnum >=1 and rnum <=5) order by seq desc;
